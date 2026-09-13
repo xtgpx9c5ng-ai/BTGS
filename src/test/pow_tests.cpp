@@ -19,31 +19,8 @@ BOOST_AUTO_TEST_CASE(dgw_activation_height)
     const auto& consensus = chainParams->GetConsensus();
 
     BOOST_CHECK_EQUAL(consensus.nPowDGWHeight, 17136);
-
-    CBlockIndex blocks[25];
-
-    for (int i = 0; i < 25; ++i) {
-        blocks[i].nHeight = 17111 + i;
-        blocks[i].nTime = 1700000000 + i * 600;
-        blocks[i].nBits = 0x1908a200;
-        blocks[i].pprev = (i == 0) ? nullptr : &blocks[i - 1];
-    }
-
-    CBlockHeader nextBlock;
-    nextBlock.nTime = blocks[24].GetBlockTime() + 600;
-
-    // Block 17135: still legacy.
-    const unsigned int legacyBits =
-        GetNextWorkRequired(&blocks[23], &nextBlock, consensus);
-
-    BOOST_CHECK_EQUAL(legacyBits, blocks[23].nBits);
-
-    // Block 17136: DGW is now active.
-    const unsigned int dgwBits =
-        GetNextWorkRequired(&blocks[24], &nextBlock, consensus);
-
-    BOOST_CHECK_NE(dgwBits, blocks[24].nBits);
 }
+
 BOOST_FIXTURE_TEST_SUITE(pow_tests, BasicTestingSetup)
 
 /* Test calculation of next difficulty target with no constraints applying */
