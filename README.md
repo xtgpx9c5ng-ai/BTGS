@@ -18,7 +18,7 @@
 * **Algorithm:** SHA-256 (Industrial-grade security).
 * **Protocol:** Native support for **BTG-20** (Inscriptions/Ordinals), allowing decentralized deployment, minting, and transfer of digital artifacts directly on the BTGS blockchain (similar to BRC-20).
 * **Infrastructure:** High-performance LevelDB integration for rapid node synchronization and data integrity.
-
+* **Dark Gravity Wave 3 Difficulty Algorithm, activates @ Blockheight 17.136 (Epoch 17)
 ---
 
 ## 🛠 Build Instructions (Linux)
