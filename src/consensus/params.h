@@ -118,6 +118,15 @@ struct Params {
     bool fPowNoRetargeting;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
+    int64_t nPowTargetSpacing;
+    int64_t nPowTargetTimespan;
+
+/**
+ * First block height using DarkGravityWave v3.
+ * Defaults to disabled on networks that do not explicitly activate it.
+ */
+int nPowDGWHeight{std::numeric_limits<int>::max()};
+
     std::chrono::seconds PowTargetSpacing() const
     {
         return std::chrono::seconds{nPowTargetSpacing};
