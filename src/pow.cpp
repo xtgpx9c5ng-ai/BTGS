@@ -10,7 +10,88 @@
 #include <primitives/block.h>
 #include <uint256.h>
 #include <util/check.h>
+static constexpr int64_t DGW_PAST_BLOCKS = 24;
 
+static unsigned int DarkGravityWave(
+    const CBlockIndex* pindexLast,
+    const Consensus::Params& params)
+{
+    const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
+
+    // Need 24 previous blocks.
+    if (pindexLast == nullptr ||
+        pindexLast->nHeight < DGW_PAST_BLOCKS) {
+        return bnPowLimit.GetCompact();
+    }
+
+    const CBlockIndex* pindex = pindexLast;
+
+    arith_uint256 bnPastTargetAvg;
+
+    // Dash/DGW v3 rolling target calculation.
+    for (int64_t nCountBlocks = 1;
+         nCountBlocks <= DGW_PAST_BLOCKS;
+         ++nCountBlocks) {
+
+        arith_uint256 bnTarget;
+        bnTarget.SetCompact(pindex->nBits);
+
+        if (nCountBlocks == 1) {
+            bnPastTargetAvg = bnTarget;
+        } else {
+            bnPastTargetAvg =
+                (bnPastTargetAvg * nCountBlocks + bnTarget)
+                / (nCountBlocks + 1);
+        }
+
+        if (nCountBlocks != DGW_PAST_BLOCKS) {
+            assert(pindex->pprev != nullptr);
+            pindex = pindex->pprev;
+        }
+    }
+
+    arith_uint256 bnNew(bnPastTargetAvg);
+
+    const int64_t nActualTimespan =
+        pindexLast->GetBlockTime() - pindex->GetBlockTime();
+
+    const int64_t nTargetTimespan =
+        DGW_PAST_BLOCKS * params.nPowTargetSpacing;
+
+    int64_t nAdjustedTimespan = nActualTimespan;
+
+    // Limit adjustment to 3x in either direction.
+    if (nAdjustedTimespan < nTargetTimespan / 3)
+        nAdjustedTimespan = nTargetTimespan / 3;
+
+    if (nAdjustedTimespan > nTargetTimespan * 3)
+        nAdjustedTimespan = nTargetTimespan * 3;
+
+    bnNew *= nAdjustedTimespan;
+    bnNew /= nTargetTimespan;
+
+    if (bnNew > bnPowLimit)
+        bnNew = bnPowLimit;
+
+    return bnNew.GetCompact();
+}
+
+unsigned int GetNextWorkRequired(
+    const CBlockIndex* pindexLast,
+    const CBlockHeader* pblock,
+    const Consensus::Params& params)
+{
+    assert(pindexLast != nullptr);
+
+    if (params.fPowNoRetargeting)
+        return pindexLast->nBits;
+
+    // DGW v3 activates for block 17136 and every block thereafter.
+    if (pindexLast->nHeight + 1 >= params.nPowDGWHeight) {
+        return DarkGravityWave(pindexLast, params);
+    }
+
+    // Existing BTGS legacy difficulty algorithm below...
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
@@ -87,10 +168,21 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
     return bnNew.GetCompact();
 }
 
-bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t height, uint32_t old_nbits, uint32_t new_nbits)
+bool PermittedDifficultyTransition(
+    const Consensus::Params& params,
+    int64_t height,
+    uint32_t old_nbits,
+    uint32_t new_nbits)
 {
-    if (params.fPowAllowMinDifficultyBlocks) return true;
+    if (params.fPowAllowMinDifficultyBlocks)
+        return true;
 
+    // DGW changes difficulty every block.
+    if (height >= params.nPowDGWHeight)
+        return true;
+
+    // Existing legacy difficulty-transition checks...
+    
     if (height % params.DifficultyAdjustmentInterval() == 0) {
         int64_t smallest_timespan = params.nPowTargetTimespan/4;
         int64_t largest_timespan = params.nPowTargetTimespan*4;
