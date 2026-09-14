@@ -97,7 +97,7 @@ static bool DecodeAndValidateTargetCustom(unsigned int nBits, const arith_256& p
     bool fNegative;
     bool fOverflow;
     targetOut.SetCompact(nBits, &fNegative, &fOverflow);
-if (fNegative  fOverflow  targetOut.IsNull()  targetOut > powLimit) {
+if (fNegative || fOverflow || targetOut.IsNull() || targetOut > powLimit) {
         return false;
     }
     if (targetOut.GetCompact() != nBits) {
