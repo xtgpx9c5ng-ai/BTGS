@@ -81,7 +81,7 @@ struct TrendMetricsFull {
 
 // Safe Ancestor Retrieval with strict chainwork monotonicity and continuity validation
 static const CBlockIndex* GetAncestorSafeMatch(const CBlockIndex* pindex, int height) {
-    if (!pindex  height > pindex->nHeight  height < 0) return nullptr;
+    if (!pindex || height > pindex->nHeight || height < 0) return nullptr;
     int diff = pindex->nHeight - height;
     while (diff-- > 0 && pindex && pindex->pprev) {
         if (pindex->nChainWork <= pindex->pprev->nChainWork) {
@@ -116,7 +116,7 @@ namespace FullSpecDAA {
         tsm.hasDispersionViolation = false;
         tsm.qualityFactorScaled = 1000;
 
-        if (!pindexStart  !pindexEnd  pindexEnd->nHeight <= pindexStart->nHeight) {
+        if (!pindexStart || !pindexEnd || pindexEnd->nHeight <= pindexStart->nHeight) {
             return tsm;
         }
 
@@ -180,7 +180,7 @@ if (rawTimespan <= 0) {
 
     // Window Sanitization: Ensures anomalies PENALIZE difficulty (shrink timespan to force hard work)
     inline int64_t SanitizeWindowTimespanFull(const CBlockIndex* pindexStart, const CBlockIndex* pindexEnd, int windowBlocks, int64_t targetSpacing, TimestampSecurityMetrics& tsm) {
-        if (!pindexStart  !pindexEnd  pindexEnd->nHeight <= pindexStart->nHeight) {
+        if (!pindexStart || !pindexEnd || pindexEnd->nHeight <= pindexStart->nHeight) {
             return windowBlocks * targetSpacing;
         }
 
@@ -657,7 +657,7 @@ std::optional<arith_uint256> DeriveTarget(unsigned int nBits, const uint256 pow_
 
     bnTarget.SetCompact(nBits, &fNegative, &fOverflow);
 
-    if (fNegative  bnTarget == 0  fOverflow || bnTarget > UintToArith256(pow_limit))
+    if (fNegative  bnTarget == 0 || fOverflow || bnTarget > UintToArith256(pow_limit))
         return {};
 
     return bnTarget;
